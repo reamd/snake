@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>snake</title>
+    <style>
+        .gameArea {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 600px;
+            height: 600px;
+            border: 5px solid #000000;
+            padding: 0;
+            margin: 0;
+        }
+
+        .gameArea .row {
+            float: left;
+            width: 100%;
+            height: 15px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .gameArea .row .col {
+            float: left;
+            width: 14px;
+            height: 14px;
+            padding: 0;
+            margin: 0;
+            border-right: 1px solid #fff;
+            border-bottom: 1px solid #fff;
+        }
+
+        .gameArea .row .col.blank {
+            background-color: #7f7f7f;
+        }
+
+        .gameArea .row .col.snake {
+            background-color: #0f0f0f;
+            /*background-color: #fff;*/
+            text-align: center;
+            font-size: 10px;
+            color: #fff;
+        }
+
+        .gameArea .row .col.snake.header {
+            background-color: #00A000;
+        }
+
+        .gameArea .row .col.food {
+            background-color: red;
+        }
+    </style>
+
+    <script src="http://cdn.bootcss.com/jquery/3.0.0-alpha1/jquery.min.js"></script>
+    <script src="../es5/snakeAIES5.js"></script>
+    <script src="../es5/snakeES5.js"></script>
+    <script>
+        var w = 18, h = 14;
+        //        var size = 20;
+        var snake;
+        function renderArea(point, type) {
+//            console.log('html renderArea type:', type, ' point:');
+//            console.log(point);
+            point.forEach(function (p) {
+                var $p = $('.row').eq(p.y).children('.col').eq(p.x);
+                if ($p.val() == type) return;
+                if ($p.val() == Snake.BLANK) $p.removeClass('blank header');
+                if ($p.val() == Snake.SNAKE) $p.removeClass('snake header');
+                if ($p.val() == Snake.FOOD) $p.removeClass('food header');
+                if (type == Snake.BLANK) $p.addClass('blank');
+                else if (type == Snake.SNAKE) $p.addClass('snake');
+                else if (type == Snake.FOOD) $p.addClass('food');
+                else return;
+                $p.val(type);
+            });
+        }
+        function renderSnake(snake) {
+//            console.log('snake HEAD', snake);
+            $('.col').html('');
+            snake.forEach(function (p, idx) {
+                var $p = $('.row').eq(p.y).children('.col').eq(p.x);
+                $p.html(idx);
+                $p.attr('class', 'col snake');
+            });
+            $('.row').eq(snake[0].y).children('.col').eq(snake[0].x).addClass('header');
+        }
+        function gameOver(win) {
+            if (win) console.log('gameOver success!!!!!!');
+            else console.log('gameOver fail!!!!!!');
+            $('#msg').html('GAME OVER!');
+            snake = null;
+        }
+
+        function eatFoodEvent(food) {
+            setTimeout(addFood, 1);
+//            clearTimeout(aiTimeout);
+//            addFood();
+        }
+
+        function addFood() {
+            snake.addFood();
+        }
+
+        var aiTimeout;
+        function ai() {
+            if (!snake.AI) return;
+            if (!snake.isMove) {
+                var dir = snake.aiGetDirection();
+                snake.move(dir);
+//                console.log('AI dir: ', dir);
+                if (dir == -999999) return;
+            }
+            aiTimeout = setTimeout(ai, 50);
+        }
+
+        $(document).ready(function () {
+            var gameArea = $('<div></div>');
+            gameArea.attr('id', 'gameArea');
+            gameArea.attr('class', 'gameArea');
+            for (var i = 0; i < h; i++) {
+                var row = $('<div></div>');
+                row.attr('class', 'row');
+                for (var j = 0; j < w; j++) {
+                    var col = $('<div></div>');
+                    col.attr('class', 'col');
+                    col.appendTo(row);
+                }
+                row.appendTo(gameArea);
+            }
+            gameArea.appendTo('body');
+
+            $('#init').click(function () {
+                clearTimeout(aiTimeout);
+                $(".col").attr('class', 'col blank').val(Snake.BLANK);
+                if (snake) snake.stop();
+                snake = new Snake({
+                    AI: true,
+                    width: w,
+                    height: h,
+                    renderArea: renderArea,
+                    renderSnake: renderSnake,
+                    gameOver: gameOver,
+                    eatFoodEvent: eatFoodEvent,
+//                    timeout: 500,
+//                    debug: true
+                });
+                snake.init();
+                addFood();
+                $('#msg').html('Waiting!');
+            });
+
+            $('#run').click(function () {
+                snake.run();
+                ai();
+                $('#msg').html('Running!');
+            });
+            $('#pause').click(function () {
+                clearTimeout(aiTimeout);
+                snake.pause();
+            });
+            $('#stop').click(function () {
+                clearTimeout(aiTimeout);
+                snake.stop();
+            });
+            $('#addFood').click(function () {
+                if (snake.AI) return;
+                addFood();
+            });
+
+            $('#UP').click(function () {
+                if (snake.AI) return;
+                snake.setDirection(Snake.UP);
+            });
+            $('#DOWN').click(function () {
+                if (snake.AI) return;
+                snake.setDirection(Snake.DOWN);
+            });
+            $('#LEFT').click(function () {
+                if (snake.AI) return;
+                snake.setDirection(Snake.LEFT);
+            });
+            $('#RIGHT').click(function () {
+                if (snake.AI) return;
+                snake.setDirection(Snake.RIGHT);
+            });
+
+            $('#go').click(function () {
+//                ai();
+            });
+
+            $(document).keydown(function (event) {
+                switch (event.keyCode) {
+                    case 37:
+                        $('#LEFT').click();
+                        break;
+                    case 38:
+                        $('#UP').click();
+                        break;
+                    case 39:
+                        $('#RIGHT').click();
+                        break;
+                    case 40:
+                        $('#DOWN').click();
+                        break;
+                    default:
+                }
+            });
+
+            $('#init').click();
+        });
+    </script>
+</head>
+<body>
+<button id="init">init</button>
+<button id="run">run</button>
+<button id="pause">pause</button>
+<button id="stop">stop</button>
+
+<button id="addFood">addFood</button>
+
+<button id="UP">UP</button>
+<button id="DOWN">DOWN</button>
+<button id="LEFT">LEFT</button>
+<button id="RIGHT">RIGHT</button>
+
+<button id="go">go</button>
+
+<p id="msg"></p>
+</body>
+</html>
